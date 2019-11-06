@@ -26,11 +26,11 @@ Init:
 	STORE  DTheta
 	OUT    SONAREN     ; Disable sonar (optional)
 	OUT    BEEP        ; Stop any beeping (optional)
-	
+
 	CALL   SetupI2C    ; Configure the I2C to read the battery voltage
 	CALL   BattCheck   ; Get battery voltage (and end if too low).
 	OUT    LCD         ; Display battery voltage (hex, tenths of volts)
-	
+
 WaitForSafety:
 	; This loop will wait for the user to toggle SW17.  Note that
 	; SCOMP does not have direct access to SW17; it only has access
@@ -43,7 +43,7 @@ WaitForSafety:
 	SHIFT  8           ; Shift over to LED17
 	OUT    XLEDS       ; LED17 blinks at 2.5Hz (10Hz/4)
 	JUMP   WaitForSafety
-	
+
 WaitForUser:
 	; This loop will wait for the user to press PB3, to ensure that
 	; they have a chance to prepare for any movement in the main code.
@@ -73,44 +73,67 @@ Main:
 	; code in that ISR will attempt to control the robot.
 	; If you want to take manual control of the robot,
 	; execute CLI &B0010 to disable the timer interrupt.
-	
+
 	;LOADI  180
 	;STORE  DTheta      ; use API to get robot to face 90 degrees
 TurnLoop:
-	
 
-	
+
+
 	;AND		0
 	;ADDI	5
-	LOADI 	&B00100000
+	LOADI 	&B00110000
 	OUT		SONAREN
-			
+
 	IN		DIST5
 	OUT		SSEG1
-	ADDI	1500
-	JNEG	InfLoop
+	ADDI	700
+	;JNEG	InfLoop
 	
+Circle:
+
+	IN		DIST5
+	ADDI	700
+	JNEG	ELSE
+	
+IF:
+	;if its too close
+	IN		DIST5
+	ADDI	-400
+	JNEG	ELSE
+	
+	IN		DIST
+	
+
 	IN     Theta
-	ADDI   -10
+	ADDI   -7
 	STORE  DTheta
+	LOADI	200
+	STORE	DVel
 	CALL   Abs         ; get abs(currentAngle - 90)
 	ADDI   -3
-	
-	JUMP   TurnLoop    ; if angle error > 3, keep checking
+	JUMP 	Circle
+ELSE:
+	LOADI	200
+	STORE	DVel
+	CALL   Abs         ; get abs(currentAngle - 90)
+	ADDI   -3
+
+	JUMP   Circle    ; if angle error > 3, keep checking
 	; at this point, robot should be within 3 degrees of 90
 	LOAD   FMid
 	STORE  DVel        ; use API to move forward
 
-	
-InfLoop: 
+
+InfLoop:
 	;LOADI	0
 	;STORE 	DTheta
 	JUMP   InfLoop
 	; note that the movement API will still be running during this
 	; infinite loop, because it uses the timer interrupt, so the
 	; robot will continue to attempt to match DTheta and DVel
-	
-	
+
+
 
 Die:
 ; Sometimes it's useful to permanently stop execution.
@@ -133,8 +156,8 @@ Forever:
 CTimer_ISR:
 	CALL   ControlMovement
 	RETI   ; return from ISR
-	
-	
+
+
 ; Control code.  If called repeatedly, this code will attempt
 ; to control the robot to face the angle specified in DTheta
 ; and match the speed specified in DVel
@@ -154,7 +177,7 @@ ControlMovement:
 	ADD    CMAErr
 	STORE  CMAErr      ; now contains a desired differential
 
-	
+
 	; For this basic control method, simply take the
 	; desired forward velocity and add the differential
 	; velocity for each wheel when turning is needed.
@@ -300,10 +323,10 @@ A2_R1n: ; region 1 negative
 	ADDI   360          ; Add 360 if we are in octant 8
 	RETURN
 A2_R3: ; region 3
-	CALL   A2_calc      ; Octants 4, 5            
+	CALL   A2_calc      ; Octants 4, 5
 	ADDI   180          ; theta' = theta + 180
 	RETURN
-A2_sw: ; switch arguments; octants 2, 3, 6, 7 
+A2_sw: ; switch arguments; octants 2, 3, 6, 7
 	LOAD   AtanY        ; Swap input arguments
 	STORE  AtanT
 	LOAD   AtanX
@@ -414,10 +437,10 @@ Mult16s:
 	STORE  mres16sH     ; clear result
 	LOADI  16           ; load 16 to counter
 Mult16s_loop:
-	STORE  mcnt16s      
+	STORE  mcnt16s
 	LOAD   m16sc        ; check the carry (from previous iteration)
 	JZERO  Mult16s_noc  ; if no carry, move on
-	LOAD   mres16sH     ; if a carry, 
+	LOAD   mres16sH     ; if a carry,
 	ADD    m16sA        ;  add multiplicand to result H
 	STORE  mres16sH
 Mult16s_noc: ; no carry
@@ -517,7 +540,7 @@ Div16s_neg:
 	LOAD   dres16sQ     ; need to negate the result
 	CALL   Neg
 	STORE  dres16sQ
-	RETURN	
+	RETURN
 d16sN: DW 0 ; numerator
 d16sD: DW 0 ; denominator
 d16sS: DW 0 ; sign value
@@ -634,7 +657,7 @@ DeadBatt:
 	OUT    XLEDS
 	CALL   Wait1       ; 1 second
 	JUMP   DeadBatt    ; repeat forever
-	
+
 ; Subroutine to read the A/D (battery voltage)
 ; Assumes that SetupI2C has been run
 GetBattLvl:
@@ -656,7 +679,7 @@ SetupI2C:
 	OUT    I2C_RDY     ; start the communication
 	CALL   BlockI2C    ; wait for it to finish
 	RETURN
-	
+
 ; Subroutine to block until I2C device is idle
 BlockI2C:
 	LOAD   Zero
