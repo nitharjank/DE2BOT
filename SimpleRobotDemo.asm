@@ -76,33 +76,66 @@ Main:
 
 	;LOADI  180
 	;STORE  DTheta      ; use API to get robot to face 90 degrees
-	JUMP Init_Search
+	;------
+		
+		;LOADI	300
+		;STORE	DVel
+		
+		;IN		DIST2
+		;ADDI	400
+		;JPOS	WALL
+	
+	;WALL:
+		;IN		DIST3
+		;ADDI	400
+		;JPOS	WALL2
+	
+	;WALL2:
+		;IN		DIST0
+		;ADDI	400
+		;JPOS	SNAKE
+		
+		;IN 		DIST5
+		;ADDI	400
+		;JPOS	SNAKE2
+		
+		;IN		Theta
+		;ADDI	90
+		;JUMP	Circle
+		
+	;SNAKE:
+	;	IN		Theta
+		;ADDI	90
+		;STORE 	DTheta	
+		;LOADI 	200
+	;-----
+	
+Search:
+	
+	CALL	Init_Search
+	
+	LOADI	0
+	OUT		Theta
+	ORIGINAL_ORI:	DW	1
+	
+Circle:
 
-
-TurnLoop:
-
-
-
-	;AND		0
-	;ADDI	5
-	LOADI 	&B11111111
+	LOADI 	&B00110000
 	OUT		SONAREN
 
 	IN		DIST5
 	OUT		SSEG1
 	ADDI	700
-	;JNEG	InfLoop
 	
-Circle:
-
-	;IN		DIST5
-	;ADDI	700
-	;JNEG	ELSE
+	IN		Theta
+	OUT		SSEG2
+	SUB		ORIGINAL_ORI
+	;JZERO	Die
 	
 IF:
 	;if its too close from sensor 5
 	IN		DIST5
-	ADDI	-300
+	ADDI	-400
 	JNEG	ELSE
 	;if its too close from sensor 4
 	IN		DIST4
@@ -110,19 +143,19 @@ IF:
 	JNEG	ELSE2
 	
 	IN     Theta
-	ADDI   -7
+	ADDI   -6
 	STORE  DTheta
-	LOADI	200
+	LOADI	275
 	STORE	DVel
 	CALL   Abs         ; get abs(currentAngle - 90)
 	ADDI   -3
 	JUMP 	Circle
+
 ELSE:
 	LOADI	200
 	STORE	DVel
 	CALL   Abs         ; get abs(currentAngle - 90)
 	ADDI   -3
-
 	JUMP   Circle    ; if angle error > 3, keep checking
 	; at this point, robot should be within 3 degrees of 90
 	;LOAD   FMid
@@ -131,77 +164,86 @@ ELSE2:
 	IN 		Theta
 	ADDI	20
 	STORE 	DTheta
-	LOADI	200
+	LOADI	275
 	STORE	DVel
 	CALL   	Abs         ; get abs(currentAngle - 90)
 	ADDI   	-3
 	JUMP 	Circle
 
-InfLoop:
-	;LOADI	0
-	;STORE 	DTheta
-	JUMP   InfLoop
-	; note that the movement API will still be running during this
-	; infinite loop, because it uses the timer interrupt, so the
-	; robot will continue to attempt to match DTheta and DVel
-
+	
 Init_Search:
 	LOADI 	&B00111111
 	OUT		SONAREN
 
 	IN 		DIST1
-	ADDI    -700
+	ADDI    -500
 	JNEG	Orient1
 
 	IN 		DIST2
-	ADDI    -700
+	ADDI    -500
 	JNEG	Orient2
 
 	IN 		DIST3
-	ADDI    -700
+	ADDI    -500
 	JNEG	Orient3
 
 	IN 		DIST4
-	ADDI    -700
+	ADDI    -500
 	JNEG	Orient4
 
 	LOADI   FMid
-	OUT DVel
-	JUMP Die
+	STORE 	DVel
+	JUMP 	Init_Search
 
 Orient1:
 	IN 	Theta
 	ADDI 44
 	STORE DTheta
-	LOADI	200
+	LOADI	0
 	STORE	DVel
-	JUMP Die
+	LOADI  90
+	STORE  DTheta  
+	JUMP TURN_90
 
 Orient2:
 	IN 	Theta
 	ADDI 12
 	STORE DTheta
-	LOADI	200
+	LOADI	0
 	STORE	DVel
-	JUMP Die
+	LOADI  90
+	STORE  DTheta
+	JUMP TURN_90
 
 Orient3:
 	IN 	Theta
 	ADDI -12
 	STORE DTheta
-	LOADI	200
+	LOADI	0
 	STORE	DVel
-	JUMP Die
+	LOADI  90
+	STORE  DTheta
+	JUMP TURN_90
 
 Orient4:
 	IN 	Theta
 	ADDI -44
 	STORE DTheta
-	LOADI	200
+	LOADI	0
 	STORE	DVel
-	JUMP Die
+	LOADI  90
+	STORE  DTheta  
+	JUMP TURN_90	
 
+TURN_90:
+	IN		Theta
+	ADDI	-90
+	CALL   Abs
+	ADDI	-3
+	JPOS	TURN_90	
+	RETURN
 
+	
 
 Die:
 ; Sometimes it's useful to permanently stop execution.
