@@ -76,6 +76,9 @@ Main:
 
 	;LOADI  180
 	;STORE  DTheta      ; use API to get robot to face 90 degrees
+	JUMP Init_Search
+
+
 TurnLoop:
 
 
@@ -129,22 +132,6 @@ ELSE2:
 	ADDI	20
 	STORE 	DTheta
 	LOADI	200
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 	STORE	DVel
 	CALL   	Abs         ; get abs(currentAngle - 90)
 	ADDI   	-3
@@ -157,6 +144,62 @@ InfLoop:
 	; note that the movement API will still be running during this
 	; infinite loop, because it uses the timer interrupt, so the
 	; robot will continue to attempt to match DTheta and DVel
+
+Init_Search:
+	LOADI 	&B00111111
+	OUT		SONAREN
+
+	IN 		DIST1
+	ADDI    -700
+	JNEG	Orient1
+
+	IN 		DIST2
+	ADDI    -700
+	JNEG	Orient2
+
+	IN 		DIST3
+	ADDI    -700
+	JNEG	Orient3
+
+	IN 		DIST4
+	ADDI    -700
+	JNEG	Orient4
+
+	LOADI   FMid
+	OUT DVel
+	JUMP Die
+
+Orient1:
+	IN 	Theta
+	ADDI 44
+	STORE DTheta
+	LOADI	200
+	STORE	DVel
+	JUMP Die
+
+Orient2:
+	IN 	Theta
+	ADDI 12
+	STORE DTheta
+	LOADI	200
+	STORE	DVel
+	JUMP Die
+
+Orient3:
+	IN 	Theta
+	ADDI -12
+	STORE DTheta
+	LOADI	200
+	STORE	DVel
+	JUMP Die
+
+Orient4:
+	IN 	Theta
+	ADDI -44
+	STORE DTheta
+	LOADI	200
+	STORE	DVel
+	JUMP Die
 
 
 
