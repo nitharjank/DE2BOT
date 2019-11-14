@@ -77,37 +77,41 @@ Main:
 	;LOADI  180
 	;STORE  DTheta      ; use API to get robot to face 90 degrees
 	;------
-		
-		;LOADI	300
-		;STORE	DVel
-		
-		;IN		DIST2
-		;ADDI	400
-		;JPOS	WALL
 	
-	;WALL:
-		;IN		DIST3
-		;ADDI	400
-		;JPOS	WALL2
-	
-	;WALL2:
-		;IN		DIST0
-		;ADDI	400
-		;JPOS	SNAKE
-		
-		;IN 		DIST5
-		;ADDI	400
-		;JPOS	SNAKE2
-		
-		;IN		Theta
-		;ADDI	90
-		;JUMP	Circle
-		
-	;SNAKE:
-	;	IN		Theta
-		;ADDI	90
-		;STORE 	DTheta	
-		;LOADI 	200
+	JUMP Search
+	;TRY IT IF POSSIBLE
+COUNT:	DW	400
+Strait:
+	LOADI	&B00101101
+	OUT		SONAREN
+	LOADI	275
+	STORE	DVel
+	IN 		DIST2		; CHECKING IF THRE IS A WALL OR REFLECTOR
+	SUB		COUNT
+	JNEG	CHECK1		
+	IN		DIST3		; SAME CHECK JUST TO BE SURE 
+	SUB		COUNT
+	JNEG	CHECK1
+	JUMP	Search		; IF THRER IS NO WALL OR REFLECTOR GO TO SEARCH //this might be wron if it dosent work then just jump to strait
+
+CHECK1:
+	IN		DIST0		; CHEACKING IS WE ARE IN LEFT CORNER OR NOT
+	SUB		COUNT
+	JPOS	CHECK2		; IF WE ARE NOT THEN CHECK2
+	LOADI	-90			; IF WE ARE IN LEFT CORNER
+	STORE	DTheta		; CHANGE TO OTHER SIDE AND TRY TO DO HALF CIRCLE 
+	LOADI	200			; ADJUST VELOCITY IF WE HAVE TO 
+	STORE	DVel
+	JUMP	CHECK1		; ////CHEAK IF WE NEE TO GO TO STRAIT SUBROUTINE OR THIS WILL WORK FINE
+CHECK2:
+	IN		DIST5		; if we are in right corner 
+	SUB		COUNT		;
+	JPOS	SEARCH		; if not go to search because it probably a reflector
+	LOADI	90			; if not turn 90 deg counter clockwise
+	STORE	DTheta		;
+	LOADI	200			; adjust velocity if needed
+	STORE	DVel		;
+	JUMP	CHECK1		; just ro be sure just check back again 
 	;-----
 	
 Search:
@@ -937,4 +941,3 @@ RIN:      EQU &HC8
 LIN:      EQU &HC9
 IR_HI:    EQU &HD0  ; read the high word of the IR receiver (OUT will clear both words)
 IR_LO:    EQU &HD1  ; read the low word of the IR receiver (OUT will clear both words)
-
