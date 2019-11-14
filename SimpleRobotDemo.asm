@@ -113,24 +113,32 @@ Main:
 Search:
 	
 	CALL	Init_Search
+	OUT 	TIMER
+	LOADI 	&B00110011
+	OUT		SONAREN
 	
-	LOADI	0
-	OUT		Theta
-	ORIGINAL_ORI:	DW	1
+	;LOADI	0
+	;OUT		Theta
+	;ORIGINAL_ORI:	DW	0
 	
 Circle:
-
-	LOADI 	&B00110000
-	OUT		SONAREN
+	IN 		TIMER ; After 15 seconds start searching for more reflectors
+	ADDI	-150
+	JPOS 	Search
 
 	IN		DIST5
 	OUT		SSEG1
 	ADDI	700
 	
-	IN		Theta
-	OUT		SSEG2
-	SUB		ORIGINAL_ORI
+	;IN		Theta
+	;OUT		SSEG2
+	;ADDI    -359
+	;CALL   Abs
+	;ADDI	-6
+	;JZERO	Search
+	;SUB		ORIGINAL_ORI
 	;JZERO	Die
+
 	
 IF:
 	;if its too close from sensor 5
@@ -141,37 +149,49 @@ IF:
 	IN		DIST4
 	ADDI	-300
 	JNEG	ELSE2
+	;if its too close from sensor 0 or 1 because robot went to wide
+	IN		DIST0
+	ADDI	-300
+	JNEG	ELSE3
+	IN 		DIST1
+	ADDI	-300
+	JNEG	ELSE3
 	
 	IN     Theta
-	ADDI   -6
+	ADDI   -15
 	STORE  DTheta
-	LOADI	275
+	LOADI	350
 	STORE	DVel
-	CALL   Abs         ; get abs(currentAngle - 90)
-	ADDI   -3
 	JUMP 	Circle
 
 ELSE:
+	; Go straight
 	LOADI	200
 	STORE	DVel
-	CALL   Abs         ; get abs(currentAngle - 90)
-	ADDI   -3
-	JUMP   Circle    ; if angle error > 3, keep checking
-	; at this point, robot should be within 3 degrees of 90
-	;LOAD   FMid
-	;STORE  DVel        ; use API to move forward
+	CALL   Abs        
+	JUMP   Circle    
+	
 ELSE2:
+;Make a 20 degree turn counter clockwise
 	IN 		Theta
 	ADDI	20
 	STORE 	DTheta
-	LOADI	275
+	LOADI	350
 	STORE	DVel
-	CALL   	Abs         ; get abs(currentAngle - 90)
-	ADDI   	-3
+	JUMP 	Circle
+	
+ELSE3:
+;Make a 20 degree turn clockwise
+	IN 		Theta
+	ADDI	-20
+	STORE 	DTheta
+	LOADI	350
+	STORE	DVel
 	JUMP 	Circle
 
 	
 Init_Search:
+; Go straight until we find a reflector
 	LOADI 	&B00111111
 	OUT		SONAREN
 
@@ -196,6 +216,7 @@ Init_Search:
 	JUMP 	Init_Search
 
 Orient1:
+;Orient towards reflector
 	IN 	Theta
 	ADDI 44
 	STORE DTheta
@@ -206,6 +227,7 @@ Orient1:
 	JUMP TURN_90
 
 Orient2:
+;Orient towards reflector
 	IN 	Theta
 	ADDI 12
 	STORE DTheta
@@ -216,6 +238,7 @@ Orient2:
 	JUMP TURN_90
 
 Orient3:
+;Orient towards reflector
 	IN 	Theta
 	ADDI -12
 	STORE DTheta
@@ -226,6 +249,7 @@ Orient3:
 	JUMP TURN_90
 
 Orient4:
+;Orient towards reflector
 	IN 	Theta
 	ADDI -44
 	STORE DTheta
@@ -236,6 +260,7 @@ Orient4:
 	JUMP TURN_90	
 
 TURN_90:
+;Orient towards reflector wait until bot turns 90 before ciricling
 	IN		Theta
 	ADDI	-90
 	CALL   Abs
@@ -912,3 +937,4 @@ RIN:      EQU &HC8
 LIN:      EQU &HC9
 IR_HI:    EQU &HD0  ; read the high word of the IR receiver (OUT will clear both words)
 IR_LO:    EQU &HD1  ; read the low word of the IR receiver (OUT will clear both words)
+
