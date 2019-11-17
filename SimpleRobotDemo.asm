@@ -284,6 +284,7 @@ Orient2:
 	IN Theta 
 	ADDI 12
 	CALL Mod360
+        STORE Theta_Target ; Store target theta val for reference later
 	STORE DTheta
 
 	; Sensor 1 detects reflector so we turn +44 degrees relative to current position
@@ -314,6 +315,7 @@ Orient3:
 	IN Theta 
 	ADDI -12
 	CALL Mod360
+        STORE Theta_Target ; Store target theta val for reference later
 	STORE DTheta
 
 	; Sensor 1 detects reflector so we turn +44 degrees relative to current position
@@ -344,6 +346,7 @@ Orient4:
 	IN Theta 
 	ADDI -44
 	CALL Mod360
+        STORE Theta_Target ; Store target theta val for reference later
 	STORE DTheta
 
 	; Sensor 1 detects reflector so we turn +44 degrees relative to current position
