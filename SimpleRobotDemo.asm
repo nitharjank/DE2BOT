@@ -123,12 +123,18 @@ Search:
 	
 	;LOADI	0
 	;OUT		Theta
-	;ORIGINAL_ORI:	DW	0
-	
+;changed the circle method so it will exactly circle one time
+ORIGINAL_ORI:	DW	0
+	IN		Theta
+	ADDI	-1
+	STORE	ORIGINAL_ORI
 Circle:
-	IN 		TIMER ; After 15 seconds start searching for more reflectors
-	ADDI	-140
-	JPOS 	Search
+	;IN 		TIMER ; After 15 seconds start searching for more reflectors
+	;ADDI	-140
+	IN		Theta
+	CALL	Mod360
+	SUB		ORIGINAL_ORI
+	JZERO	Search
 
 	IN		DIST5
 	OUT		SSEG1
