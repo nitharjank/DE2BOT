@@ -77,50 +77,63 @@ Main:
 	;LOADI  180
 	;STORE  DTheta      ; use API to get robot to face 90 degrees
 	;------
-	
+
 	JUMP Search
 	;TRY IT IF POSSIBLE
 COUNT:	DW	400
 Strait:
-	LOADI	&B00101101
+	LOADI	&B00111111
 	OUT		SONAREN
 	LOADI	275
 	STORE	DVel
 	IN 		DIST2		; CHECKING IF THRE IS A WALL OR REFLECTOR
 	SUB		COUNT
-	JNEG	CHECK1		
-	IN		DIST3		; SAME CHECK JUST TO BE SURE 
+	JNEG	CHECK1
+	IN		DIST3		; SAME CHECK JUST TO BE SURE
 	SUB		COUNT
 	JNEG	CHECK1
 	JUMP	Search		; IF THRER IS NO WALL OR REFLECTOR GO TO SEARCH //this might be wron if it dosent work then just jump to strait
+	IN 		DIST1
+	SUB 	COUNT
+	JNEG	CHECK1
 
 CHECK1:
 	IN		DIST0		; CHEACKING IS WE ARE IN LEFT CORNER OR NOT
 	SUB		COUNT
 	JPOS	CHECK2		; IF WE ARE NOT THEN CHECK2
-	LOADI	-90			; IF WE ARE IN LEFT CORNER
-	STORE	DTheta		; CHANGE TO OTHER SIDE AND TRY TO DO HALF CIRCLE 
-	LOADI	200			; ADJUST VELOCITY IF WE HAVE TO 
+	LOADI	360			; IF WE ARE IN LEFT CORNER
+	SUB 	90
+	STORE	DTheta		; CHANGE TO OTHER SIDE AND TRY TO DO HALF CIRCLE
+	LOADI	200			; ADJUST VELOCITY IF WE HAVE TO
 	STORE	DVel
 	JUMP	CHECK1		; ////CHEAK IF WE NEE TO GO TO STRAIT SUBROUTINE OR THIS WILL WORK FINE
 CHECK2:
-	IN		DIST5		; if we are in right corner 
+	IN		DIST5		; if we are in right corner
 	SUB		COUNT		;
-	JPOS	SEARCH		; if not go to search because it probably a reflector
+	JPOS	Search		; if not go to search because it probably a reflector
 	LOADI	90			; if not turn 90 deg counter clockwise
 	STORE	DTheta		;
 	LOADI	200			; adjust velocity if needed
 	STORE	DVel		;
-	JUMP	CHECK1		; just ro be sure just check back again 
+	JUMP	CHECK1		; just ro be sure just check back again
 	;-----
-	
+CHECK3:
+	IN 		DIST4
+	SUB 	COUNT
+	JPOS 	CHECK1
+	IN 		DIST1
+	SUB 	COUNT
+	JPOS 	Search
+	ADDI 	-46
+	STORE 	DTheta
+	JUMP 	Search
 Search:
-	
+
 	CALL	Init_Search
 	OUT 	TIMER
 	LOADI 	&B00110011
 	OUT		SONAREN
-	
+
 	;LOADI	0
 	;OUT		Theta
 ;changed the circle method so it will exactly circle one time
@@ -139,7 +152,7 @@ Circle:
 	IN		DIST5
 	OUT		SSEG1
 	ADDI	700
-	
+
 	;IN		Theta
 	;OUT		SSEG2
 	;ADDI    -359
@@ -149,7 +162,7 @@ Circle:
 	;SUB		ORIGINAL_ORI
 	;JZERO	Die
 
-	
+
 IF:
 	;if its too close from sensor 5
 	IN		DIST5
@@ -166,7 +179,7 @@ IF:
 	IN 		DIST1
 	ADDI	-300
 	JNEG	ELSE3
-	
+
 	IN     Theta
 	ADDI   -15
 	STORE  DTheta
@@ -178,9 +191,9 @@ ELSE:
 	; Go straight
 	LOADI	200
 	STORE	DVel
-	CALL   Abs        
-	JUMP   Circle    
-	
+	CALL   Abs
+	JUMP   Circle
+
 ELSE2:
 ;Make a 20 degree turn counter clockwise
 	IN 		Theta
@@ -189,7 +202,7 @@ ELSE2:
 	LOADI	350
 	STORE	DVel
 	JUMP 	Circle
-	
+
 ELSE3:
 ;Make a 20 degree turn clockwise
 	IN 		Theta
@@ -199,7 +212,7 @@ ELSE3:
 	STORE	DVel
 	JUMP 	Circle
 
-	
+
 Init_Search:
 ; Go straight until we find a reflector
 	LOADI 	&B00111111
@@ -235,9 +248,9 @@ Orient1:
 	LOADI 44
 	STORE DTheta
 	CALL	Turn1
-	
+
 	LOADI  90
-	STORE  DTheta  
+	STORE  DTheta
 	JUMP TURN_90
 
 Orient2:
@@ -245,12 +258,12 @@ Orient2:
 
 	LOADI	0
 	STORE	DVel
-	
+
 	;IN 	Theta
 	LOADI 12
 	STORE DTheta
 	CALL	Turn2
-	
+
 	LOADI  90
 	STORE  DTheta
 	JUMP TURN_90
@@ -259,8 +272,8 @@ Orient3:
 ;Orient towards reflector
 	LOADI	0
 	STORE	DVel
-	
-	
+
+
 	;IN 		Theta
 	LOADI 	-12
 	STORE 	DTheta
@@ -279,10 +292,10 @@ Orient4:
 	LOADI 	-44
 	STORE 	DTheta
 	CALL	Turn4
-	
+
 	LOADI  90
-	STORE  DTheta  
-	JUMP TURN_90	
+	STORE  DTheta
+	JUMP TURN_90
 
 TURN_90:
 ;Orient towards reflector wait until bot turns 90 before ciricling
@@ -290,9 +303,9 @@ TURN_90:
 	ADDI	-90
 	CALL   Abs
 	ADDI	-3
-	JPOS	TURN_90	
+	JPOS	TURN_90
 	RETURN
-	
+
 Turn1:
 	IN		Theta
 	ADDI	-44
@@ -300,7 +313,7 @@ Turn1:
 	ADDI	-3
 	JPOS	Turn1
 	RETURN
-	
+
 Turn2:
 	IN		Theta
 	ADDI	-12
@@ -308,15 +321,15 @@ Turn2:
 	ADDI	-3
 	JPOS	Turn2
 	RETURN
-	
+
 Turn3:
 	IN		Theta
 	ADDI	12
 	CALL   Abs
 	ADDI	-3
 	JNEG	Turn3
-	RETURN	
-	
+	RETURN
+
 Turn4:
 	IN		Theta
 	ADDI	44
