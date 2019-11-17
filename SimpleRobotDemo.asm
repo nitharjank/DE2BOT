@@ -123,12 +123,18 @@ Search:
 	
 	;LOADI	0
 	;OUT		Theta
-	;ORIGINAL_ORI:	DW	0
-	
+;changed the circle method so it will exactly circle one time
+ORIGINAL_ORI:	DW	0
+	IN		Theta
+	ADDI	-1
+	STORE	ORIGINAL_ORI
 Circle:
-	IN 		TIMER ; After 15 seconds start searching for more reflectors
-	ADDI	-150
-	JPOS 	Search
+	;IN 		TIMER ; After 15 seconds start searching for more reflectors
+	;ADDI	-140
+	IN		Theta
+	CALL	Mod360
+	SUB		ORIGINAL_ORI
+	JZERO	Search
 
 	IN		DIST5
 	OUT		SSEG1
@@ -200,19 +206,19 @@ Init_Search:
 	OUT		SONAREN
 
 	IN 		DIST1
-	ADDI    -500
+	ADDI    -600
 	JNEG	Orient1
 
 	IN 		DIST2
-	ADDI    -500
+	ADDI    -600
 	JNEG	Orient2
 
 	IN 		DIST3
-	ADDI    -500
+	ADDI    -600
 	JNEG	Orient3
 
 	IN 		DIST4
-	ADDI    -500
+	ADDI    -600
 	JNEG	Orient4
 
 	LOADI   FMid
@@ -221,44 +227,59 @@ Init_Search:
 
 Orient1:
 ;Orient towards reflector
-	IN 	Theta
-	ADDI 44
-	STORE DTheta
 	LOADI	0
 	STORE	DVel
+	;turn here
+
+	;IN 	Theta
+	LOADI 44
+	STORE DTheta
+	CALL	Turn1
+	
 	LOADI  90
 	STORE  DTheta  
 	JUMP TURN_90
 
 Orient2:
 ;Orient towards reflector
-	IN 	Theta
-	ADDI 12
-	STORE DTheta
+
 	LOADI	0
 	STORE	DVel
+	
+	;IN 	Theta
+	LOADI 12
+	STORE DTheta
+	CALL	Turn2
+	
 	LOADI  90
 	STORE  DTheta
 	JUMP TURN_90
 
 Orient3:
 ;Orient towards reflector
-	IN 	Theta
-	ADDI -12
-	STORE DTheta
 	LOADI	0
 	STORE	DVel
+	
+	
+	;IN 		Theta
+	LOADI 	-12
+	STORE 	DTheta
+	CALL	Turn3
+
 	LOADI  90
 	STORE  DTheta
 	JUMP TURN_90
 
 Orient4:
 ;Orient towards reflector
-	IN 	Theta
-	ADDI -44
-	STORE DTheta
 	LOADI	0
 	STORE	DVel
+
+	;IN 	Theta
+	LOADI 	-44
+	STORE 	DTheta
+	CALL	Turn4
+	
 	LOADI  90
 	STORE  DTheta  
 	JUMP TURN_90	
@@ -271,9 +292,38 @@ TURN_90:
 	ADDI	-3
 	JPOS	TURN_90	
 	RETURN
-
 	
-
+Turn1:
+	IN		Theta
+	ADDI	-44
+	CALL   Abs
+	ADDI	-3
+	JPOS	Turn1
+	RETURN
+	
+Turn2:
+	IN		Theta
+	ADDI	-12
+	CALL   Abs
+	ADDI	-3
+	JPOS	Turn2
+	RETURN
+	
+Turn3:
+	IN		Theta
+	ADDI	12
+	CALL   Abs
+	ADDI	-3
+	JNEG	Turn3
+	RETURN	
+	
+Turn4:
+	IN		Theta
+	ADDI	44
+	CALL   Abs
+	ADDI	-3
+	JNEG	Turn4
+	RETURN
 Die:
 ; Sometimes it's useful to permanently stop execution.
 ; This will also catch the execution if it accidentally
