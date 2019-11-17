@@ -124,7 +124,7 @@ CHECK3:
 	IN 		DIST1
 	SUB 	COUNT
 	JPOS 	Search
-	ADDI 	-46
+	ADDI 	180
 	STORE 	DTheta
 	JUMP 	Search
 Search:
