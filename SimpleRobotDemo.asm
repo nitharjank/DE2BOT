@@ -212,12 +212,13 @@ ELSE3:
 	STORE	DVel
 	JUMP 	Circle
 
+Theta_Target: DW 0
 
 Init_Search:
 ; Go straight until we find a reflector
 	LOADI 	&B00111111
 	OUT		SONAREN
-
+	
 	IN 		DIST1
 	ADDI    -600
 	JNEG	Orient1
@@ -239,104 +240,168 @@ Init_Search:
 	JUMP 	Init_Search
 
 Orient1:
-;Orient towards reflector
+;Orient towards reflector or wall dont know what it is yet
 	LOADI	0
 	STORE	DVel
-	;turn here
 
-	;IN 	Theta
-	LOADI 44
+	; We make sure we are completely stopped here
+	CALL STOP_IMM1
+
+	; Robot will orient to +44 degrees relative to current position
+	; Have to use mod function to avoid edge case errors EX 350 + 44 = 394 
+	; This will be invalid but Mod360 will return correct heading of 34
+	IN Theta 
+	ADDI 44
+	CALL Mod360
+	STORE Theta_Target ; Store target theta val for reference later
 	STORE DTheta
-	CALL	Turn1
 
-	LOADI  90
+	; Sensor 1 detects reflector so we turn +44 degrees relative to current position
+	CALL TURN
+
+	; Now that we're facing the reflector, slowly approach it
+	CALL APPROACH
+
+	; Turn 85 CCW to be perpendicular to reflector
+	IN Theta
+	ADDI  85
+	CALL Mod360
 	STORE  DTheta
-	JUMP TURN_90
+
+	JUMP TURN
 
 Orient2:
-;Orient towards reflector
-
+;Orient towards reflector or wall dont know what it is yet
 	LOADI	0
 	STORE	DVel
 
-	;IN 	Theta
-	LOADI 12
-	STORE DTheta
-	CALL	Turn2
+	; We make sure we are completely stopped here
+	CALL STOP_IMM1
 
-	LOADI  90
+	; Robot will orient to +12 degrees relative to current position
+	; Have to use mod function to avoid edge case errors EX 350 + 44 = 394 
+	; This will be invalid but Mod360 will return correct heading of 34
+	IN Theta 
+	ADDI 12
+	CALL Mod360
+	STORE DTheta
+
+	; Sensor 1 detects reflector so we turn +44 degrees relative to current position
+	CALL TURN
+
+	; Now that we're facing the reflector, slowly approach it
+	CALL APPROACH
+
+	; Turn 85 CCW to be perpendicular to reflector
+	IN Theta
+	ADDI  85
+	CALL Mod360
 	STORE  DTheta
-	JUMP TURN_90
+
+	JUMP TURN
 
 Orient3:
-;Orient towards reflector
+;Orient towards reflector or wall dont know what it is yet
 	LOADI	0
 	STORE	DVel
 
+	; We make sure we are completely stopped here
+	CALL STOP_IMM1
 
-	;IN 		Theta
-	LOADI 	-12
-	STORE 	DTheta
-	CALL	Turn3
+	; Robot will orient to -12 degrees relative to current position
+	; Have to use mod function to avoid edge case errors EX 350 + 44 = 394 
+	; This will be invalid but Mod360 will return correct heading of 34
+	IN Theta 
+	ADDI -12
+	CALL Mod360
+	STORE DTheta
 
-	LOADI  90
+	; Sensor 1 detects reflector so we turn +44 degrees relative to current position
+	CALL TURN
+
+	; Now that we're facing the reflector, slowly approach it
+	CALL APPROACH
+
+	; Turn 85 CCW to be perpendicular to reflector
+	IN Theta
+	ADDI  85
+	CALL Mod360
 	STORE  DTheta
-	JUMP TURN_90
+
+	JUMP TURN
 
 Orient4:
-;Orient towards reflector
+;Orient towards reflector or wall dont know what it is yet
 	LOADI	0
 	STORE	DVel
 
-	;IN 	Theta
-	LOADI 	-44
-	STORE 	DTheta
-	CALL	Turn4
+	; We make sure we are completely stopped here
+	CALL STOP_IMM1
 
-	LOADI  90
+	; Robot will orient to -44 degrees relative to current position
+	; Have to use mod function to avoid edge case errors EX 350 + 44 = 394 
+	; This will be invalid but Mod360 will return correct heading of 34
+	IN Theta 
+	ADDI -44
+	CALL Mod360
+	STORE DTheta
+
+	; Sensor 1 detects reflector so we turn +44 degrees relative to current position
+	CALL TURN
+
+	; Now that we're facing the reflector, slowly approach it
+	CALL APPROACH
+
+	; Turn 85 CCW to be perpendicular to reflector
+	IN Theta
+	ADDI  85
+	CALL Mod360
 	STORE  DTheta
-	JUMP TURN_90
 
-TURN_90:
-;Orient towards reflector wait until bot turns 90 before ciricling
+	JUMP TURN
+
+TURN:
+;Orient towards reflector wait until bot turns 44 before ciricling
 	IN		Theta
-	ADDI	-90
-	CALL   Abs
-	ADDI	-3
-	JPOS	TURN_90
+	SUB 	Theta_Target 	
+	JZERO 	EXIT 			; We are at the target theta value, return to init search method
+	JUMP 	TURN 			; Not at target value, jump back to loop
+
+STOP_IMM1:					; Check if Left wheel velocity is stopped w/ error of 10
+	IN 		LVEL
+	ADDI 	-10
+	JNEG	STOP_IMM2
+	JUMP 	STOP_IMM1		; Keep checking if left wheel stopped
+
+STOP_IMM2:					; Check if Right wheel velocity is stopped w/ error of 10
+	IN 		RVEL
+	ADDI 	-10
+	JNEG	EXIT
+	JUMP  	STOP_IMM2		; Keep checking if right wheel stopped 
+
+APPROACH: 					; Robot will be nearly completely stopped when we get here
+	LOAD FSlow
+	STORE DVel
+
+APP_LOOP:
+	LOAD DIST2
+	ADDI -100
+	JNEG EXIT 				; Sensor 2 detects obj w/i 10 cm
+
+	; Here we check sensor 3 in case of sensor 2 error
+	; Might be the case that angle is weird and sensor 2 returns 0x7FFF
+
+	LOAD DIST3 				
+	ADDI -100
+	JNEG EXIT 				; Sensor 3 detects obj w/i 10 cm
+
+	JUMP APP_LOOP ; Neither sensor 2 or 3 detects something nearby jump back to start
+
+EXIT:			   ; Universal return to caller 
 	RETURN
 
-Turn1:
-	IN		Theta
-	ADDI	-44
-	CALL   Abs
-	ADDI	-3
-	JPOS	Turn1
-	RETURN
 
-Turn2:
-	IN		Theta
-	ADDI	-12
-	CALL   Abs
-	ADDI	-3
-	JPOS	Turn2
-	RETURN
 
-Turn3:
-	IN		Theta
-	ADDI	12
-	CALL   Abs
-	ADDI	-3
-	JNEG	Turn3
-	RETURN
-
-Turn4:
-	IN		Theta
-	ADDI	44
-	CALL   Abs
-	ADDI	-3
-	JNEG	Turn4
-	RETURN
 Die:
 ; Sometimes it's useful to permanently stop execution.
 ; This will also catch the execution if it accidentally
