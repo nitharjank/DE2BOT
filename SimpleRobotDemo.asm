@@ -137,31 +137,19 @@ Search:
 	;LOADI	0
 	;OUT		Theta
 ;changed the circle method so it will exactly circle one time
-ORIGINAL_ORI:	DW	0
+INIT_CIRCLE:
+	ORIGINAL_ORI:	DW	0
+	INIT_COUNT:		DW	1
 	IN		Theta
-	ADDI	-1
+	ADDI	1
+	CALL	Mod360
+	OUT		SSEG1
 	STORE	ORIGINAL_ORI
+	OUT		TIMER
 Circle:
 	;IN 		TIMER ; After 15 seconds start searching for more reflectors
 	;ADDI	-140
-	IN		Theta
-	CALL	Mod360
-	SUB		ORIGINAL_ORI
-	JZERO	Search
-
-	IN		DIST5
-	OUT		SSEG1
-	ADDI	700
-
-	;IN		Theta
-	;OUT		SSEG2
-	;ADDI    -359
-	;CALL   Abs
-	;ADDI	-6
-	;JZERO	Search
-	;SUB		ORIGINAL_ORI
-	;JZERO	Die
-
+	
 
 IF:
 	;if its too close from sensor 5
@@ -181,37 +169,56 @@ IF:
 	JNEG	ELSE3
 
 	IN     Theta
-	ADDI   -15
+	ADDI   -12
 	STORE  DTheta
 	LOADI	350
 	STORE	DVel
-	JUMP 	Circle
+	JUMP 	CHECK_END
 
 ELSE:
 	; Go straight
 	LOADI	200
 	STORE	DVel
 	CALL   Abs
-	JUMP   Circle
+	JUMP   CHECK_END
 
 ELSE2:
 ;Make a 20 degree turn counter clockwise
 	IN 		Theta
-	ADDI	20
+	ADDI	30
 	STORE 	DTheta
-	LOADI	350
+	LOADI	250
 	STORE	DVel
-	JUMP 	Circle
+	JUMP 	CHECK_END
 
 ELSE3:
 ;Make a 20 degree turn clockwise
 	IN 		Theta
-	ADDI	-20
+	ADDI	-30
 	STORE 	DTheta
 	LOADI	350
 	STORE	DVel
-	JUMP 	Circle
+	JUMP 	CHECK_END
+	
+CHECK_END:
+	;CALL	Wait1
+	LOAD	INIT_COUNT
+	JPOS	INITIAL_WAIT
+	
+	IN		Theta
+	CALL	Mod360
+	OUT		SSEG2
+	SUB		ORIGINAL_ORI
+	JZERO	Search
+	JUMP Circle
 
+INITIAL_WAIT:
+	CALL Wait1
+	LOADI	0
+	STORE	INIT_COUNT
+	JUMP	Circle
+	
+	
 Theta_Target: DW 0
 
 Init_Search:
@@ -240,147 +247,128 @@ Init_Search:
 	JUMP 	Init_Search
 
 Orient1:
-;Orient towards reflector or wall dont know what it is yet
+;Orient towards reflector
 	LOADI	0
 	STORE	DVel
+	;turn here
 
-	; We make sure we are completely stopped here
-	CALL STOP_IMM1
-
-	; Robot will orient to +44 degrees relative to current position
-	; Have to use mod function to avoid edge case errors EX 350 + 44 = 394 
-	; This will be invalid but Mod360 will return correct heading of 34
-	IN Theta 
-	ADDI 44
-	CALL Mod360
-	STORE Theta_Target ; Store target theta val for reference later
+	;IN 	Theta
+	LOADI 44
 	STORE DTheta
-
-	; Sensor 1 detects reflector so we turn +44 degrees relative to current position
-	CALL TURN
-
-	; Now that we're facing the reflector, slowly approach it
+	CALL	Turn1
 	CALL APPROACH
-
-	; Turn 85 CCW to be perpendicular to reflector
-	IN Theta
-	ADDI  85
-	CALL Mod360
+	
+	LOADI  85
 	STORE  DTheta
-
-	JUMP TURN
-
+	CALL TURN_90
+	JUMP INIT_CIRCLE
+	
 Orient2:
-;Orient towards reflector or wall dont know what it is yet
+;Orient towards reflector
+
 	LOADI	0
 	STORE	DVel
 
-	; We make sure we are completely stopped here
-	CALL STOP_IMM1
-
-	; Robot will orient to +12 degrees relative to current position
-	; Have to use mod function to avoid edge case errors EX 350 + 44 = 394 
-	; This will be invalid but Mod360 will return correct heading of 34
-	IN Theta 
-	ADDI 12
-	CALL Mod360
-        STORE Theta_Target ; Store target theta val for reference later
+	;IN 	Theta
+	LOADI 12
 	STORE DTheta
-
-	; Sensor 1 detects reflector so we turn +44 degrees relative to current position
-	CALL TURN
-
-	; Now that we're facing the reflector, slowly approach it
+	CALL	Turn2
 	CALL APPROACH
 
-	; Turn 85 CCW to be perpendicular to reflector
-	IN Theta
-	ADDI  85
-	CALL Mod360
+	LOADI  85
 	STORE  DTheta
-
-	JUMP TURN
-
+	CALL TURN_90
+	JUMP INIT_CIRCLE
+	
 Orient3:
-;Orient towards reflector or wall dont know what it is yet
+;Orient towards reflector
 	LOADI	0
 	STORE	DVel
 
-	; We make sure we are completely stopped here
-	CALL STOP_IMM1
 
-	; Robot will orient to -12 degrees relative to current position
-	; Have to use mod function to avoid edge case errors EX 350 + 44 = 394 
-	; This will be invalid but Mod360 will return correct heading of 34
-	IN Theta 
-	ADDI -12
-	CALL Mod360
-        STORE Theta_Target ; Store target theta val for reference later
-	STORE DTheta
-
-	; Sensor 1 detects reflector so we turn +44 degrees relative to current position
-	CALL TURN
-
-	; Now that we're facing the reflector, slowly approach it
+	IN 		Theta
+	ADDI 	-12
+	CALL   Mod360
+	STORE	Theta_Target
+	LOADI	-12
+	STORE 	DTheta
+	CALL	Turn3
 	CALL APPROACH
 
-	; Turn 85 CCW to be perpendicular to reflector
-	IN Theta
-	ADDI  85
-	CALL Mod360
+	LOADI  85
 	STORE  DTheta
-
-	JUMP TURN
-
+	CALL TURN_90
+	JUMP INIT_CIRCLE
+	
 Orient4:
-;Orient towards reflector or wall dont know what it is yet
+;Orient towards reflector
 	LOADI	0
 	STORE	DVel
 
-	; We make sure we are completely stopped here
-	CALL STOP_IMM1
-
-	; Robot will orient to -44 degrees relative to current position
-	; Have to use mod function to avoid edge case errors EX 350 + 44 = 394 
-	; This will be invalid but Mod360 will return correct heading of 34
-	IN Theta 
-	ADDI -44
-	CALL Mod360
-        STORE Theta_Target ; Store target theta val for reference later
-	STORE DTheta
-
-	; Sensor 1 detects reflector so we turn +44 degrees relative to current position
-	CALL TURN
-
-	; Now that we're facing the reflector, slowly approach it
+	IN 		Theta
+	ADDI 	-44
+	CALL   Mod360
+	STORE	Theta_Target
+	LOADI	-44
+	STORE 	DTheta
+	CALL	Turn4
 	CALL APPROACH
 
-	; Turn 85 CCW to be perpendicular to reflector
-	IN Theta
-	ADDI  85
-	CALL Mod360
+	LOADI  85
 	STORE  DTheta
+	CALL 	TURN_90
+	JUMP INIT_CIRCLE
 
-	JUMP TURN
-
-TURN:
-;Orient towards reflector wait until bot turns 44 before ciricling
+TURN_90:
+;Orient towards reflector wait until bot turns 90 before ciricling
 	IN		Theta
-	SUB 	Theta_Target 	
-	JZERO 	EXIT 			; We are at the target theta value, return to init search method
-	JUMP 	TURN 			; Not at target value, jump back to loop
+	ADDI	-85
+	CALL   Abs
+	ADDI	-3
+	JPOS	TURN_90
+	RETURN
 
-STOP_IMM1:					; Check if Left wheel velocity is stopped w/ error of 10
-	IN 		LVEL
-	ADDI 	-10
-	JNEG	STOP_IMM2
-	JUMP 	STOP_IMM1		; Keep checking if left wheel stopped
+Turn1:
+	IN		Theta
+	ADDI	-44
+	CALL   Abs
+	ADDI	-3
+	JPOS	Turn1
+	RETURN
 
-STOP_IMM2:					; Check if Right wheel velocity is stopped w/ error of 10
-	IN 		RVEL
-	ADDI 	-10
-	JNEG	EXIT
-	JUMP  	STOP_IMM2		; Keep checking if right wheel stopped 
+Turn2:
+	IN		Theta
+	ADDI	-12
+	CALL   Abs
+	ADDI	-3
+	JPOS	Turn2
+	RETURN
+
+Turn3:
+	IN		Theta
+	SUB		Theta_Target
+	JZERO 	EXIT
+	JUMP 	Turn3
+	RETURN
+
+Turn4:
+	IN		Theta
+	SUB		Theta_Target
+	JZERO 	EXIT
+	JUMP 	Turn4
+	RETURN
+
+;STOP_IMM1:					; Check if Left wheel velocity is stopped w/ error of 10
+;	IN 		LVEL
+;	ADDI 	-10
+;	JNEG	STOP_IMM2
+;	JUMP 	STOP_IMM1		; Keep checking if left wheel stopped
+
+;STOP_IMM2:					; Check if Right wheel velocity is stopped w/ error of 10
+;	IN 		RVEL
+;	ADDI 	-10
+;	JNEG	EXIT
+;	JUMP  	STOP_IMM2		; Keep checking if right wheel stopped 
 
 APPROACH: 					; Robot will be nearly completely stopped when we get here
 	LOAD FSlow
@@ -892,7 +880,7 @@ Wait1:
 Wloop:
 	IN     TIMER
 	OUT    XLEDS       ; User-feedback that a pause is occurring.
-	ADDI   -10         ; 1 second at 10Hz.
+	ADDI   -1         ; 1 second at 10Hz.
 	JNEG   Wloop
 	RETURN
 
