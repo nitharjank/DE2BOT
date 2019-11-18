@@ -79,7 +79,7 @@ Main:
 	;------
 
 	JUMP Search
-	;TRY IT IF POSSIBLE
+
 COUNT:	DW	400
 Strait:
 	LOADI	&B00111111
@@ -127,6 +127,8 @@ CHECK3:
 	ADDI 	180
 	STORE 	DTheta
 	JUMP 	Search
+
+
 Search:
 
 	CALL	Init_Search
@@ -138,14 +140,13 @@ Search:
 	;OUT		Theta
 ;changed the circle method so it will exactly circle one time
 INIT_CIRCLE:
-	ORIGINAL_ORI:	DW	0
+	ORIGINAL_ORI:	DW	5
 	INIT_COUNT:		DW	1
-	IN		Theta
-	ADDI	1
-	CALL	Mod360
+	OUT 	RESETPOS		
 	OUT		SSEG1
-	STORE	ORIGINAL_ORI
-	OUT		TIMER
+	OUT		TIMER 		; Reset timer
+	LOADI 	359
+	OUT Theta 			; Hardcode theta to be 359
 Circle:
 	;IN 		TIMER ; After 15 seconds start searching for more reflectors
 	;ADDI	-140
@@ -154,68 +155,65 @@ Circle:
 IF:
 	;if its too close from sensor 5
 	IN		DIST5
-	ADDI	-400
+	ADDI	-300
 	JNEG	ELSE
 	;if its too close from sensor 4
 	IN		DIST4
-	ADDI	-300
+	ADDI	-400 		; abt 1 ft or 30cm away
 	JNEG	ELSE2
 	;if its too close from sensor 0 or 1 because robot went to wide
 	IN		DIST0
-	ADDI	-300
+	ADDI	-310 		; abt 1 ft or 30cm away
 	JNEG	ELSE3
 	IN 		DIST1
-	ADDI	-300
+	ADDI	-400    	; abt 1 ft or 30cm away
 	JNEG	ELSE3
 
-	IN     Theta
-	ADDI   -12
-	STORE  DTheta
+	IN      Theta
+	ADDI    -12
+	STORE   DTheta
 	LOADI	350
 	STORE	DVel
 	JUMP 	CHECK_END
 
 ELSE:
 	; Go straight
-	LOADI	200
+	LOADI	350
 	STORE	DVel
-	CALL   Abs
-	JUMP   CHECK_END
+	JUMP    CHECK_END
 
 ELSE2:
-;Make a 20 degree turn counter clockwise
+;Make a 25 degree turn counter clockwise
 	IN 		Theta
-	ADDI	30
+	ADDI	25
 	STORE 	DTheta
 	LOADI	250
 	STORE	DVel
 	JUMP 	CHECK_END
 
 ELSE3:
-;Make a 20 degree turn clockwise
+;Make a 25 degree turn clockwise
 	IN 		Theta
-	ADDI	-30
+	ADDI	-25
 	STORE 	DTheta
-	LOADI	350
+	LOADI	250
 	STORE	DVel
 	JUMP 	CHECK_END
 	
 CHECK_END:
-	;CALL	Wait1
-	LOAD	INIT_COUNT
-	JPOS	INITIAL_WAIT
+	;LOAD	INIT_COUNT		; INIT_COUNT will always be one at beginning of program
+	;JPOS	INITIAL_WAIT	; Always jump to INITIAL_WAIT at start of circle
 	
-	IN		Theta
-	CALL	Mod360
+	IN		Theta 			; Theta should be 359 here
 	OUT		SSEG2
-	SUB		ORIGINAL_ORI
-	JZERO	Search
-	JUMP Circle
+	SUB		ORIGINAL_ORI    ; Theta should go from 359 -> 0
+	JNEG	Search       	; If Theta is between values of 3-0 we will go to search
+	JUMP 	Circle 			; JZERO unreliable should use range of values
 
-INITIAL_WAIT:
-	CALL Wait1
+INITIAL_WAIT:				; Theoretically allows Theta value to go from 0 to 348ish 
+	CALL Wait1				; Wait for 1/5 of a second
 	LOADI	0
-	STORE	INIT_COUNT
+	STORE	INIT_COUNT		; INIT_COUNT set to 0 this loop wont run until Init_Search calls it
 	JUMP	Circle
 	
 	
@@ -228,19 +226,19 @@ Init_Search:
 	
 	IN 		DIST1
 	ADDI    -600
-	JNEG	Orient1
+	JNEG	Orient1 ; Got a ping from sensor 1
 
 	IN 		DIST2
 	ADDI    -600
-	JNEG	Orient2
+	JNEG	Orient2 ; Got a ping from sensor 2
 
 	IN 		DIST3
 	ADDI    -600
-	JNEG	Orient3
+	JNEG	Orient3 ; Got a ping from sensor 3
 
 	IN 		DIST4
 	ADDI    -600
-	JNEG	Orient4
+	JNEG	Orient4 ; ; Got a ping from sensor 4
 
 	LOADI   FMid
 	STORE 	DVel
@@ -255,8 +253,9 @@ Orient1:
 	;IN 	Theta
 	LOADI 44
 	STORE DTheta
-	CALL	Turn1
+	CALL	TURN_44
 	CALL APPROACH
+	JUMP Wall_Check ; We should be about 1 ft away from obj
 	
 	LOADI  85
 	STORE  DTheta
@@ -272,8 +271,9 @@ Orient2:
 	;IN 	Theta
 	LOADI 12
 	STORE DTheta
-	CALL	Turn2
+	CALL	TURN_12
 	CALL APPROACH
+	JUMP Wall_Check ; We should be about 1 ft away from obj
 
 	LOADI  85
 	STORE  DTheta
@@ -292,8 +292,9 @@ Orient3:
 	STORE	Theta_Target
 	LOADI	-12
 	STORE 	DTheta
-	CALL	Turn3
+	CALL	TURN_12
 	CALL APPROACH
+	JUMP Wall_Check ; We should be about 1 ft away from obj
 
 	LOADI  85
 	STORE  DTheta
@@ -311,8 +312,11 @@ Orient4:
 	STORE	Theta_Target
 	LOADI	-44
 	STORE 	DTheta
-	CALL	Turn4
+	CALL	TURN_44
 	CALL APPROACH
+	JUMP Wall_Check ; We should be about 1 ft away from obj
+
+NoWall:
 
 	LOADI  85
 	STORE  DTheta
@@ -328,35 +332,37 @@ TURN_90:
 	JPOS	TURN_90
 	RETURN
 
-Turn1:
+TURN_44:
 	IN		Theta
 	ADDI	-44
 	CALL   Abs
 	ADDI	-3
-	JPOS	Turn1
+	JPOS	TURN_44
 	RETURN
 
-Turn2:
+TURN_12:
 	IN		Theta
 	ADDI	-12
 	CALL   Abs
 	ADDI	-3
-	JPOS	Turn2
+	JPOS	TURN_12
 	RETURN
 
-Turn3:
-	IN		Theta
-	SUB		Theta_Target
-	JZERO 	EXIT
-	JUMP 	Turn3
-	RETURN
+;Turn3:					; Want the robot to move -12 degrees
+;	IN		Theta
+;	SUB		Theta_Target
+;	JZERO 	EXIT
+;	JUMP 	Turn3
+;	RETURN
 
-Turn4:
-	IN		Theta
-	SUB		Theta_Target
-	JZERO 	EXIT
-	JUMP 	Turn4
-	RETURN
+;Turn4:					; Want the robot to move -44 degrees
+;	IN		Theta
+;	SUB		Theta_Target
+;	CALL 	Mod360			; Case where theta = 0 -44 = 316
+
+;	JZERO 	EXIT
+;	JUMP 	Turn4
+;	RETURN
 
 ;STOP_IMM1:					; Check if Left wheel velocity is stopped w/ error of 10
 ;	IN 		LVEL
@@ -376,20 +382,44 @@ APPROACH: 					; Robot will be nearly completely stopped when we get here
 
 APP_LOOP:
 	LOAD DIST2
-	ADDI -100
-	JNEG EXIT 				; Sensor 2 detects obj w/i 10 cm
+	ADDI -310
+	JNEG EXIT 				; Sensor 2 detects obj w/i ~1 ft
 
 	; Here we check sensor 3 in case of sensor 2 error
 	; Might be the case that angle is weird and sensor 2 returns 0x7FFF
 
 	LOAD DIST3 				
-	ADDI -100
-	JNEG EXIT 				; Sensor 3 detects obj w/i 10 cm
+	ADDI -310
+	JNEG EXIT 				; Sensor 3 detects obj w/i ~ 1ft 
 
 	JUMP APP_LOOP ; Neither sensor 2 or 3 detects something nearby jump back to start
 
 EXIT:			   ; Universal return to caller 
 	RETURN
+
+; In this function if all front sensors return a value then we must be facing a wall
+
+Wall_Check:  		
+	IN DIST4		; Will detect wall abt 1 ft away cos(44) * 42 cm = ~30cm or 1 ft
+	ADDI -420 
+	JNEG Wall 		; Object must be a wall
+
+	IN DIST1
+	ADDI -420
+	JNEG Wall 		; In case sensor 4 errors
+	JUMP NoWall			; No wall detected go back to init_search
+
+Wall:
+	LOAD Zero
+	STORE DVel
+
+TURN_180:
+	IN		Theta
+	ADDI	-180
+	CALL    Abs
+	ADDI	-3
+	JPOS	TURN_180
+	JUMP 	Init_Search   ; Start searching all over again
 
 
 
@@ -880,7 +910,7 @@ Wait1:
 Wloop:
 	IN     TIMER
 	OUT    XLEDS       ; User-feedback that a pause is occurring.
-	ADDI   -1         ; 1 second at 10Hz.
+	ADDI   -2         ; 1 second at 10Hz.
 	JNEG   Wloop
 	RETURN
 
