@@ -131,7 +131,7 @@ CHECK3:
 
 Search:
 
-	CALL	Init_Search
+	JUMP	Init_Search
 	OUT 	TIMER
 	LOADI 	&B00110011
 	OUT		SONAREN
@@ -143,7 +143,7 @@ INIT_CIRCLE:
 	ORIGINAL_ORI:	DW	5
 	INIT_COUNT:		DW	1
 	OUT 	RESETPOS		
-	OUT		SSEG1
+	;OUT		SSEG1
 	OUT		TIMER 		; Reset timer
 	LOADI 	359
 	OUT Theta 			; Hardcode theta to be 359
@@ -254,13 +254,13 @@ Orient1:
 	LOADI 44
 	STORE DTheta
 	CALL	TURN_44
-	CALL APPROACH
-	JUMP Wall_Check ; We should be about 1 ft away from obj
+	JUMP APPROACH
+	;JUMP Wall_Check ; We should be about 1 ft away from obj
 	
-	LOADI  85
-	STORE  DTheta
-	CALL TURN_90
-	JUMP INIT_CIRCLE
+	;LOADI  -85
+	;STORE  DTheta
+	;CALL TURN_90
+	;JUMP INIT_CIRCLE
 	
 Orient2:
 ;Orient towards reflector
@@ -272,65 +272,66 @@ Orient2:
 	LOADI 12
 	STORE DTheta
 	CALL	TURN_12
-	CALL APPROACH
-	JUMP Wall_Check ; We should be about 1 ft away from obj
-
-	LOADI  85
-	STORE  DTheta
-	CALL TURN_90
-	JUMP INIT_CIRCLE
+	JUMP APPROACH
+	;JUMP Wall_Check ; We should be about 1 ft away from obj
+	
+	;LOADI  -85
+	;STORE  DTheta
+	;CALL TURN_90
+	;JUMP INIT_CIRCLE
 	
 Orient3:
 ;Orient towards reflector
 	LOADI	0
 	STORE	DVel
 
-
-	IN 		Theta
-	ADDI 	-12
-	CALL   Mod360
-	STORE	Theta_Target
+	;IN 		Theta
+	;ADDI 	-12
+	;CALL   Mod360
+	;STORE	Theta_Target
 	LOADI	-12
 	STORE 	DTheta
 	CALL	TURN_12
-	CALL APPROACH
-	JUMP Wall_Check ; We should be about 1 ft away from obj
+	JUMP APPROACH
+	;JUMP Wall_Check ; We should be about 1 ft away from obj
 
-	LOADI  85
-	STORE  DTheta
-	CALL TURN_90
-	JUMP INIT_CIRCLE
+	;LOADI  -85
+	;STORE  DTheta
+	;CALL TURN_90
+	;JUMP INIT_CIRCLE
 	
 Orient4:
 ;Orient towards reflector
 	LOADI	0
 	STORE	DVel
 
-	IN 		Theta
-	ADDI 	-44
-	CALL   Mod360
-	STORE	Theta_Target
+	;IN 		Theta
+	;ADDI 	-44
+	;CALL   Mod360
+	;STORE	Theta_Target
 	LOADI	-44
 	STORE 	DTheta
 	CALL	TURN_44
-	CALL APPROACH
-	JUMP Wall_Check ; We should be about 1 ft away from obj
+	JUMP APPROACH
+	;JUMP Wall_Check ; We should be about 1 ft away from obj
+	
+	;CALL TURN_90
+	;JUMP INIT_CIRCLE
 
-NoWall:
-
-	LOADI  85
-	STORE  DTheta
-	CALL 	TURN_90
-	JUMP INIT_CIRCLE
-
+	
 TURN_90:
-;Orient towards reflector wait until bot turns 90 before ciricling
+    LOADI  85
+	STORE  DTheta
+	;LOADI  200
+	;STORE DVel
+						;Orient towards reflector wait until bot turns 90 before ciricling
+Loop_90:
 	IN		Theta
 	ADDI	-85
 	CALL   Abs
 	ADDI	-3
-	JPOS	TURN_90
-	RETURN
+	JPOS	Loop_90
+	JUMP INIT_CIRCLE
 
 TURN_44:
 	IN		Theta
@@ -377,25 +378,29 @@ TURN_12:
 ;	JUMP  	STOP_IMM2		; Keep checking if right wheel stopped 
 
 APPROACH: 					; Robot will be nearly completely stopped when we get here
-	LOAD FSlow
+	LOAD  FSlow
 	STORE DVel
 
 APP_LOOP:
-	LOAD DIST2
-	ADDI -310
+	IN DIST2
+	OUT SSEG1
+	ADDI -350
 	JNEG EXIT 				; Sensor 2 detects obj w/i ~1 ft
 
 	; Here we check sensor 3 in case of sensor 2 error
 	; Might be the case that angle is weird and sensor 2 returns 0x7FFF
 
-	LOAD DIST3 				
-	ADDI -310
+	IN DIST3
+	OUT  SSEG2 				
+	ADDI -350
 	JNEG EXIT 				; Sensor 3 detects obj w/i ~ 1ft 
 
 	JUMP APP_LOOP ; Neither sensor 2 or 3 detects something nearby jump back to start
 
-EXIT:			   ; Universal return to caller 
-	RETURN
+EXIT:			   ; Universal return to caller
+	LOAD Zero
+	STORE DVel 		; Stop Robot here 
+	JUMP TURN_90
 
 ; In this function if all front sensors return a value then we must be facing a wall
 
@@ -420,6 +425,13 @@ TURN_180:
 	ADDI	-3
 	JPOS	TURN_180
 	JUMP 	Init_Search   ; Start searching all over again
+	
+NoWall:
+
+	LOADI  85
+	STORE  DTheta
+	CALL 	TURN_90
+	JUMP INIT_CIRCLE
 
 
 
