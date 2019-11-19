@@ -338,7 +338,7 @@ TURN_90:
 						;Orient towards reflector wait until bot turns 90 before ciricling
 Loop_90:
 	IN		Theta
-	ADDI	-8\0
+	ADDI	-80
 	CALL   Abs
 	ADDI	-3
 	JPOS	Loop_90
@@ -361,6 +361,7 @@ TURN_12:
 	RETURN
 
 TURN_44R:
+	; CALL Wait2     ; Possible solution just wait 2 seconds for bot to turn
 	IN		Theta
 	SUB		Theta_Target
 	CALL   Abs
@@ -369,6 +370,7 @@ TURN_44R:
 	RETURN
 
 TURN_12R:
+	; CALL Wait2     ; Possible solution just wait 2 seconds for bot to turn
 	IN		Theta
 	SUB		Theta_Target
 	CALL   Abs
@@ -950,6 +952,16 @@ Wloop:
 	IN     TIMER
 	OUT    XLEDS       ; User-feedback that a pause is occurring.
 	ADDI   -2         ; 1 second at 10Hz.
+	JNEG   Wloop
+	RETURN
+
+; Subroutine to wait (block) for 1 second
+Wait2:
+	OUT    TIMER
+Wloop:
+	IN     TIMER
+	OUT    XLEDS       ; User-feedback that a pause is occurring.
+	ADDI   -20         ; 1 second at 10Hz.
 	JNEG   Wloop
 	RETURN
 
