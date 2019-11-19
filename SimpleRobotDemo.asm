@@ -77,7 +77,7 @@ Main:
 	;LOADI  180
 	;STORE  DTheta      ; use API to get robot to face 90 degrees
 	;------
-
+	;JUMP Wall_Check
 	JUMP Search
 
 COUNT:	DW	400
@@ -161,12 +161,14 @@ IF:
 	ADDI	-400 		; abt 1 ft or 30cm away
 	JNEG	ELSE2
 	;if its too close from sensor 0 or 1 because robot went to wide
-	IN		DIST0
-	ADDI	-310 		; abt 1 ft or 30cm away
-	JNEG	ELSE3
 	IN 		DIST1
 	ADDI	-400    	; abt 1 ft or 30cm away
 	JNEG	ELSE3
+	
+	IN		DIST0
+	ADDI	-310 		; abt 1 ft or 30cm away
+	JNEG	ELSE3
+	
 
 	IN      Theta
 	ADDI    -12
@@ -177,7 +179,7 @@ IF:
 
 ELSE:
 	; Go straight
-	LOADI	200
+	LOADI	350
 	STORE	DVel
 	JUMP    CHECK_END
 
@@ -193,7 +195,7 @@ ELSE2:
 ELSE3:
 ;Make a 25 degree turn clockwise
 	IN 		Theta
-	ADDI	-25
+	ADDI	-20
 	STORE 	DTheta
 	LOADI	250
 	STORE	DVel
@@ -211,11 +213,11 @@ CHECK_END:
 	JPOS	Search       	; If Theta is between values of 3-0 we will go to search
 	JUMP 	Circle 			; JZERO unreliable should use range of values
 
-INITIAL_WAIT:				; Theoretically allows Theta value to go from 0 to 348ish 
-	CALL 	Wait1				; Wait for 1/5 of a second
-	LOADI	0
-	STORE	INIT_COUNT		; INIT_COUNT set to 0 this loop wont run until Init_Search calls it
-	JUMP	Circle
+;INITIAL_WAIT:				; Theoretically allows Theta value to go from 0 to 348ish 
+;	CALL 	Wait1				; Wait for 1/5 of a second
+;	LOADI	0
+;;	STORE	INIT_COUNT		; INIT_COUNT set to 0 this loop wont run until Init_Search calls it
+;	JUMP	Circle
 	
 	
 Theta_Target: DW 0
@@ -226,19 +228,19 @@ Init_Search:
 	OUT		SONAREN
 	
 	IN 		DIST1
-	ADDI    -600
+	ADDI    -500
 	JNEG	Orient1 ; Got a ping from sensor 1
 
 	IN 		DIST2
-	ADDI    -600
+	ADDI    -500
 	JNEG	Orient2 ; Got a ping from sensor 2
 
 	IN 		DIST3
-	ADDI    -600
+	ADDI    -500
 	JNEG	Orient3 ; Got a ping from sensor 3
 
 	IN 		DIST4
-	ADDI    -600
+	ADDI    -500
 	JNEG	Orient4 ; ; Got a ping from sensor 4
 
 	LOADI   FMid
@@ -256,7 +258,7 @@ Orient1:
 	STORE DTheta
 	CALL	TURN_44
 	JUMP APPROACH
-	;JUMP Wall_Check ; We should be about 1 ft away from obj
+	;JUMP CHECK3 ; We should be about 1 ft away from obj
 	
 	;LOADI  -85
 	;STORE  DTheta
@@ -274,7 +276,7 @@ Orient2:
 	STORE DTheta
 	CALL	TURN_12
 	JUMP APPROACH
-	;JUMP Wall_Check ; We should be about 1 ft away from obj
+	;JUMP CHECK3 ; We should be about 1 ft away from obj
 	
 	;LOADI  -85
 	;STORE  DTheta
@@ -299,8 +301,8 @@ Orient3:
 	STORE	Theta_Target
 	CALL	TURN_12R
 	
-	JUMP APPROACH
-	;JUMP Wall_Check ; We should be about 1 ft away from obj
+	JUMP APPROACHR
+	;JUMP CHECK3 ; We should be about 1 ft away from obj
 
 	;LOADI  -85
 	;STORE  DTheta
@@ -323,8 +325,8 @@ Orient4:
 	CALL	Mod360
 	STORE	Theta_Target
 	CALL	TURN_44R
-	JUMP APPROACH
-	;JUMP Wall_Check ; We should be about 1 ft away from obj
+	JUMP APPROACHR
+	;JUMP CHECK3 ; We should be about 1 ft away from obj
 	
 	;CALL TURN_90
 	;JUMP INIT_CIRCLE
@@ -342,6 +344,20 @@ Loop_90:
 	CALL   Abs
 	ADDI	-3
 	JPOS	Loop_90
+	JUMP INIT_CIRCLE
+	
+TURN_90R:
+    LOADI  30
+	STORE  DTheta
+	;LOADI  200
+	;STORE DVel
+						;Orient towards reflector wait until bot turns 90 before ciricling
+Loop_90R:
+	IN		Theta
+	SUB		Theta_Target
+	CALL   Abs
+	ADDI	-3
+	JPOS	Loop_90R
 	JUMP INIT_CIRCLE
 
 TURN_44:
@@ -361,7 +377,7 @@ TURN_12:
 	RETURN
 
 TURN_44R:
-	; CALL Wait2     ; Possible solution just wait 2 seconds for bot to turn
+	;CALL Wait2     ; Possible solution just wait 2 seconds for bot to turn
 	IN		Theta
 	SUB		Theta_Target
 	CALL   Abs
@@ -370,7 +386,7 @@ TURN_44R:
 	RETURN
 
 TURN_12R:
-	; CALL Wait2     ; Possible solution just wait 2 seconds for bot to turn
+	;CALL Wait2     ; Possible solution just wait 2 seconds for bot to turn
 	IN		Theta
 	SUB		Theta_Target
 	CALL   Abs
@@ -414,7 +430,7 @@ APP_LOOP:
 	IN DIST2
 	OUT SSEG1
 	ADDI -450
-	JNEG EXIT 				; Sensor 2 detects obj w/i ~1 ft
+	JNEG Wall_Check 				; Sensor 2 detects obj w/i ~1 ft
 
 	; Here we check sensor 3 in case of sensor 2 error
 	; Might be the case that angle is weird and sensor 2 returns 0x7FFF
@@ -422,7 +438,7 @@ APP_LOOP:
 	IN DIST3
 	OUT  SSEG2 				
 	ADDI -450
-	JNEG EXIT 				; Sensor 3 detects obj w/i ~ 1ft 
+	JNEG Wall_Check 				; Sensor 3 detects obj w/i ~ 1ft 
 
 	JUMP APP_LOOP ; Neither sensor 2 or 3 detects something nearby jump back to start
 
@@ -430,37 +446,80 @@ EXIT:			   ; Universal return to caller
 	LOAD Zero
 	STORE DVel 		; Stop Robot here 
 	JUMP TURN_90
+	
+APPROACHR: 					; Robot will be nearly completely stopped when we get here
+	LOAD  FSlow
+	STORE DVel
+
+APP_LOOPR:
+	IN DIST2
+	OUT SSEG1
+	ADDI -450
+	JNEG Wall_Check 				; Sensor 2 detects obj w/i ~1 ft
+
+	; Here we check sensor 3 in case of sensor 2 error
+	; Might be the case that angle is weird and sensor 2 returns 0x7FFF
+
+	IN DIST3
+	OUT  SSEG2 				
+	ADDI -450
+	JNEG Wall_Check 				; Sensor 3 detects obj w/i ~ 1ft 
+
+	JUMP APP_LOOPR ; Neither sensor 2 or 3 detects something nearby jump back to start
+
+EXITR:			   ; Universal return to caller
+	LOAD Zero
+	STORE DVel 		; Stop Robot here 
+	IN		Theta
+	ADDI	300
+	CALL	Mod360
+	STORE	Theta_Target
+	JUMP TURN_90R
 
 ; In this function if all front sensors return a value then we must be facing a wall
 
-Wall_Check:  		
-	IN DIST4		; Will detect wall abt 1 ft away cos(44) * 42 cm = ~30cm or 1 ft
-	ADDI -420 
-	JNEG Wall 		; Object must be a wall
-
+Wall_Check:
+	LOADI	&B00111111
+	OUT		SONAREN
+	CALL 	Wait1
 	IN DIST1
-	ADDI -420
-	JNEG Wall 		; In case sensor 4 errors
-	JUMP NoWall			; No wall detected go back to init_search
+	OUT SSEG1
+	ADDI -400
+	JNEG Dos
+	JUMP EXIT
 
-Wall:
-	LOAD Zero
-	STORE DVel
+Dos: 
+	IN DIST2
+	OUT SSEG2
+	ADDI -400
+	JNEG Tres
+	JUMP EXIT
+
+Tres:
+	IN DIST3
+	ADDI -400
+	JNEG Cuatro
+	JUMP EXIT
+
+Cuatro:
+	IN DIST4
+	ADDI -400
+	JNEG TURN_180
+	JUMP EXIT
 
 TURN_180:
+	LOADI  180
+	STORE  DTheta
+	;LOADI  200
+	;STORE DVel
+						;Orient towards reflector wait until bot turns 90 before ciricling
+Loop_180:
 	IN		Theta
 	ADDI	-180
-	CALL    Abs
+	CALL   Abs
 	ADDI	-3
-	JPOS	TURN_180
+	JPOS	Loop_180 
 	JUMP 	Init_Search   ; Start searching all over again
-	
-NoWall:
-
-	LOADI  85
-	STORE  DTheta
-	CALL 	TURN_90
-	JUMP INIT_CIRCLE
 
 
 
@@ -951,18 +1010,18 @@ Wait1:
 Wloop:
 	IN     TIMER
 	OUT    XLEDS       ; User-feedback that a pause is occurring.
-	ADDI   -2         ; 1 second at 10Hz.
+	ADDI   -10         ; 1 second at 10Hz.
 	JNEG   Wloop
 	RETURN
 
 ; Subroutine to wait (block) for 1 second
 Wait2:
 	OUT    TIMER
-Wloop:
+W2loop:
 	IN     TIMER
 	OUT    XLEDS       ; User-feedback that a pause is occurring.
-	ADDI   -20         ; 1 second at 10Hz.
-	JNEG   Wloop
+	ADDI   -10         ; 1 second at 10Hz.
+	JNEG   W2loop
 	RETURN
 
 ; This subroutine will get the battery voltage,
