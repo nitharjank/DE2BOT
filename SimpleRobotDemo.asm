@@ -142,14 +142,13 @@ Search:
 INIT_CIRCLE:
 	ORIGINAL_ORI:	DW	5
 	INIT_COUNT:		DW	1
-	OUT 	RESETPOS		
+	;OUT 	RESETPOS		
 	;OUT		SSEG1
 	OUT		TIMER 		; Reset timer
-	LOADI 	359
-	OUT Theta 			; Hardcode theta to be 359
+	;LOADI 	359
+	;OUT 	Theta 			; Hardcode theta to be 359
 Circle:
-	;IN 		TIMER ; After 15 seconds start searching for more reflectors
-	;ADDI	-140
+	
 	
 
 IF:
@@ -178,7 +177,7 @@ IF:
 
 ELSE:
 	; Go straight
-	LOADI	350
+	LOADI	200
 	STORE	DVel
 	JUMP    CHECK_END
 
@@ -204,14 +203,16 @@ CHECK_END:
 	;LOAD	INIT_COUNT		; INIT_COUNT will always be one at beginning of program
 	;JPOS	INITIAL_WAIT	; Always jump to INITIAL_WAIT at start of circle
 	
-	IN		Theta 			; Theta should be 359 here
-	OUT		SSEG2
-	SUB		ORIGINAL_ORI    ; Theta should go from 359 -> 0
-	JNEG	Search       	; If Theta is between values of 3-0 we will go to search
+	;IN		Theta 			; Theta should be 359 here
+	;OUT		SSEG2
+	;SUB		ORIGINAL_ORI    ; Theta should go from 359 -> 0
+	IN 		TIMER ; After 15 seconds start searching for more reflectors
+	ADDI	-140
+	JPOS	Search       	; If Theta is between values of 3-0 we will go to search
 	JUMP 	Circle 			; JZERO unreliable should use range of values
 
 INITIAL_WAIT:				; Theoretically allows Theta value to go from 0 to 348ish 
-	CALL Wait1				; Wait for 1/5 of a second
+	CALL 	Wait1				; Wait for 1/5 of a second
 	LOADI	0
 	STORE	INIT_COUNT		; INIT_COUNT set to 0 this loop wont run until Init_Search calls it
 	JUMP	Circle
@@ -291,7 +292,13 @@ Orient3:
 	;STORE	Theta_Target
 	LOADI	-12
 	STORE 	DTheta
-	CALL	TURN_12
+	
+	IN		Theta
+	ADDI	348
+	CALL	Mod360
+	STORE	Theta_Target
+	CALL	TURN_12R
+	
 	JUMP APPROACH
 	;JUMP Wall_Check ; We should be about 1 ft away from obj
 
@@ -311,7 +318,11 @@ Orient4:
 	;STORE	Theta_Target
 	LOADI	-44
 	STORE 	DTheta
-	CALL	TURN_44
+	IN		Theta
+	ADDI	316
+	CALL	Mod360
+	STORE	Theta_Target
+	CALL	TURN_44R
 	JUMP APPROACH
 	;JUMP Wall_Check ; We should be about 1 ft away from obj
 	
@@ -320,14 +331,14 @@ Orient4:
 
 	
 TURN_90:
-    LOADI  85
+    LOADI  80
 	STORE  DTheta
 	;LOADI  200
 	;STORE DVel
 						;Orient towards reflector wait until bot turns 90 before ciricling
 Loop_90:
 	IN		Theta
-	ADDI	-85
+	ADDI	-8\0
 	CALL   Abs
 	ADDI	-3
 	JPOS	Loop_90
@@ -347,6 +358,22 @@ TURN_12:
 	CALL   Abs
 	ADDI	-3
 	JPOS	TURN_12
+	RETURN
+
+TURN_44R:
+	IN		Theta
+	SUB		Theta_Target
+	CALL   Abs
+	ADDI	-3
+	JPOS	TURN_44R
+	RETURN
+
+TURN_12R:
+	IN		Theta
+	SUB		Theta_Target
+	CALL   Abs
+	ADDI	-3
+	JPOS	TURN_12R
 	RETURN
 
 ;Turn3:					; Want the robot to move -12 degrees
@@ -384,7 +411,7 @@ APPROACH: 					; Robot will be nearly completely stopped when we get here
 APP_LOOP:
 	IN DIST2
 	OUT SSEG1
-	ADDI -350
+	ADDI -450
 	JNEG EXIT 				; Sensor 2 detects obj w/i ~1 ft
 
 	; Here we check sensor 3 in case of sensor 2 error
@@ -392,7 +419,7 @@ APP_LOOP:
 
 	IN DIST3
 	OUT  SSEG2 				
-	ADDI -350
+	ADDI -450
 	JNEG EXIT 				; Sensor 3 detects obj w/i ~ 1ft 
 
 	JUMP APP_LOOP ; Neither sensor 2 or 3 detects something nearby jump back to start
