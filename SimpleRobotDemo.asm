@@ -161,17 +161,17 @@ IF:
 	ADDI	-400 		; abt 1 ft or 30cm away
 	JNEG	ELSE2
 	;if its too close from sensor 0 or 1 because robot went to wide
-	IN 		DIST1
-	ADDI	-400    	; abt 1 ft or 30cm away
-	JNEG	ELSE3
+;	IN 		DIST1
+;	ADDI	-400    	; abt 1 ft or 30cm away
+;	JNEG	ELSE3
 	
-	IN		DIST0
-	ADDI	-310 		; abt 1 ft or 30cm away
-	JNEG	ELSE3
+;	IN		DIST0
+;	ADDI	-310 		; abt 1 ft or 30cm away
+;	JNEG	ELSE3
 	
 
 	IN      Theta
-	ADDI    -12
+	ADDI    -10
 	STORE   DTheta
 	LOADI	350
 	STORE	DVel
@@ -179,7 +179,7 @@ IF:
 
 ELSE:
 	; Go straight
-	LOADI	350
+	LOADI	250
 	STORE	DVel
 	JUMP    CHECK_END
 
@@ -192,14 +192,14 @@ ELSE2:
 	STORE	DVel
 	JUMP 	CHECK_END
 
-ELSE3:
+;ELSE3:
 ;Make a 25 degree turn clockwise
-	IN 		Theta
-	ADDI	-20
-	STORE 	DTheta
-	LOADI	250
-	STORE	DVel
-	JUMP 	CHECK_END
+;	IN 		Theta
+;	ADDI	-20
+;	STORE 	DTheta
+;;	LOADI	250
+;	STORE	DVel
+;	JUMP 	CHECK_END
 	
 CHECK_END:
 	;LOAD	INIT_COUNT		; INIT_COUNT will always be one at beginning of program
@@ -346,19 +346,21 @@ Loop_90:
 	JPOS	Loop_90
 	JUMP INIT_CIRCLE
 	
+
 TURN_90R:
-    LOADI  30
+    LOADI  90
 	STORE  DTheta
-	;LOADI  200
-	;STORE DVel
 						;Orient towards reflector wait until bot turns 90 before ciricling
 Loop_90R:
 	IN		Theta
+	OUT		SSEG2
+	
 	SUB		Theta_Target
-	CALL   Abs
+	
+	CALL   	Abs
 	ADDI	-3
 	JPOS	Loop_90R
-	JUMP INIT_CIRCLE
+	JUMP 	INIT_CIRCLE
 
 TURN_44:
 	IN		Theta
@@ -394,51 +396,25 @@ TURN_12R:
 	JPOS	TURN_12R
 	RETURN
 
-;Turn3:					; Want the robot to move -12 degrees
-;	IN		Theta
-;	SUB		Theta_Target
-;	JZERO 	EXIT
-;	JUMP 	Turn3
-;	RETURN
-
-;Turn4:					; Want the robot to move -44 degrees
-;	IN		Theta
-;	SUB		Theta_Target
-;	CALL 	Mod360			; Case where theta = 0 -44 = 316
-
-;	JZERO 	EXIT
-;	JUMP 	Turn4
-;	RETURN
-
-;STOP_IMM1:					; Check if Left wheel velocity is stopped w/ error of 10
-;	IN 		LVEL
-;	ADDI 	-10
-;	JNEG	STOP_IMM2
-;	JUMP 	STOP_IMM1		; Keep checking if left wheel stopped
-
-;STOP_IMM2:					; Check if Right wheel velocity is stopped w/ error of 10
-;	IN 		RVEL
-;	ADDI 	-10
-;	JNEG	EXIT
-;	JUMP  	STOP_IMM2		; Keep checking if right wheel stopped 
 
 APPROACH: 					; Robot will be nearly completely stopped when we get here
 	LOAD  FSlow
 	STORE DVel
 
 APP_LOOP:
+
 	IN DIST2
 	OUT SSEG1
 	ADDI -450
-	JNEG Wall_Check 				; Sensor 2 detects obj w/i ~1 ft
+	JNEG EXIT				; Sensor 2 detects obj w/i ~1 ft
 
-	; Here we check sensor 3 in case of sensor 2 error
-	; Might be the case that angle is weird and sensor 2 returns 0x7FFF
-
+							; Here we check sensor 3 in case of sensor 2 error
+							; Might be the case that angle is weird and sensor 2 returns 0x7FFF
+		
 	IN DIST3
 	OUT  SSEG2 				
 	ADDI -450
-	JNEG Wall_Check 				; Sensor 3 detects obj w/i ~ 1ft 
+	JNEG EXIT				; Sensor 3 detects obj w/i ~ 1ft 
 
 	JUMP APP_LOOP ; Neither sensor 2 or 3 detects something nearby jump back to start
 
@@ -447,35 +423,38 @@ EXIT:			   ; Universal return to caller
 	STORE DVel 		; Stop Robot here 
 	JUMP TURN_90
 	
+
 APPROACHR: 					; Robot will be nearly completely stopped when we get here
 	LOAD  FSlow
 	STORE DVel
 
 APP_LOOPR:
 	IN DIST2
-	OUT SSEG1
 	ADDI -450
-	JNEG Wall_Check 				; Sensor 2 detects obj w/i ~1 ft
+	JNEG EXITR				; Sensor 2 detects obj w/i ~1 ft
 
 	; Here we check sensor 3 in case of sensor 2 error
 	; Might be the case that angle is weird and sensor 2 returns 0x7FFF
 
-	IN DIST3
-	OUT  SSEG2 				
+	IN DIST3		
 	ADDI -450
-	JNEG Wall_Check 				; Sensor 3 detects obj w/i ~ 1ft 
+	JNEG EXITR				; Sensor 3 detects obj w/i ~ 1ft 
 
 	JUMP APP_LOOPR ; Neither sensor 2 or 3 detects something nearby jump back to start
 
 EXITR:			   ; Universal return to caller
 	LOAD Zero
 	STORE DVel 		; Stop Robot here 
-	IN		Theta
-	ADDI	300
-	CALL	Mod360
-	STORE	Theta_Target
-	JUMP TURN_90R
+	;IN		Theta
+	;ADDI	314
+	;CALL	Mod360
+	;STORE	Theta_Target
+	OUT		RESETPOS
+	JUMP 	TURN_90
 
+	
+	
+	
 ; In this function if all front sensors return a value then we must be facing a wall
 
 Wall_Check:
